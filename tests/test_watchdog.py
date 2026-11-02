@@ -119,3 +119,16 @@ def test_missing_log_dir_is_fine(tmp_path):
     dog, _ = _dog(g2swap, tmp_path)
 
     assert dog.tick(1000.0) is False
+
+
+def test_a_watchdog_switch_is_written_to_history(tmp_path, monkeypatch):
+    saved = []
+    monkeypatch.setattr("claude_swap.watchdog.history.record", saved.append)
+    cswap = _Cswap(["rate_limited", "rate_limited", "ok"])
+    dog, _ = _dog(cswap, tmp_path)
+
+    dog.tick(1000.0)
+
+    assert saved[0]["kind"] == "switch"
+    assert saved[0]["source"] == "watchdog"
+    assert "Rate limit detected" in saved[0]["trigger"]

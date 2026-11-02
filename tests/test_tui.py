@@ -1860,3 +1860,46 @@ class TestUpdateOffer:
             from claude_swap.tui.dashboard import DashboardScreen
 
             assert isinstance(app.screen, DashboardScreen)
+
+
+@pytest.mark.asyncio
+class TestModeBanner:
+    async def _banner(self, tmp_path, monkeypatch, state):
+        monkeypatch.setattr("claude_swap.tui.dashboard.daemon.running", lambda: state)
+        fake = FakeSwitcher([make_account(1, active=True)], tmp_path)
+        app = make_app(fake)
+        async with app.run_test(size=(100, 40)) as pilot:
+            await settle(pilot)
+            from textual.widgets import Static
+
+            banner = app.screen.query_one("#mode-banner", Static)
+            return str(banner.render()), set(banner.classes)
+
+    async def test_daemon_running_says_auto_switch_on(self, tmp_path, monkeypatch):
+        text, classes = await self._banner(tmp_path, monkeypatch, True)
+        assert "AUTO-SWITCH ON" in text
+        assert "auto" in classes
+
+    async def test_daemon_stopped_says_manual_mode(self, tmp_path, monkeypatch):
+        text, classes = await self._banner(tmp_path, monkeypatch, False)
+        assert "MANUAL MODE" in text
+        assert "manual" in classes
+
+    async def test_no_daemon_says_manual_mode_and_why(self, tmp_path, monkeypatch):
+        text, _ = await self._banner(tmp_path, monkeypatch, None)
+        assert "MANUAL MODE" in text
+        assert "no auto-switch daemon installed" in text
+
+    async def test_m_turns_the_daemon_off(self, tmp_path, monkeypatch):
+        calls = []
+        monkeypatch.setattr("claude_swap.tui.dashboard.daemon.running", lambda: True)
+        monkeypatch.setattr(
+            "claude_swap.tui.dashboard.daemon.set_running", lambda on: calls.append(on) or True
+        )
+        fake = FakeSwitcher([make_account(1, active=True)], tmp_path)
+        app = make_app(fake)
+        async with app.run_test(size=(100, 40)) as pilot:
+            await settle(pilot)
+            await pilot.press("m")
+            await settle(pilot)
+        assert calls == [False]

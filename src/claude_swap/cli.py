@@ -870,10 +870,38 @@ Defaults live in settings.json in the backup root; flags override them.
     from claude_swap.printer import accent, yellowed
     from claude_swap.settings import load_settings, merged_with_cli
 
+    from claude_swap import history
+
+    last_windows: dict = {}
+
+    def remember(event: AutoSwitchEvent) -> None:
+        """Keep the usage of every account from the latest poll, and write the
+        events worth debugging to the durable history."""
+        nonlocal last_windows
+        if "poll" == event.kind:
+            last_windows = dict(getattr(event, "windows", {}) or {})
+            return
+        if "switch" == event.kind and not getattr(event, "dry_run", False):
+            history.record(
+                {
+                    "kind": "switch",
+                    "source": "daemon",
+                    "trigger": getattr(event, "trigger", ""),
+                    "from": getattr(event, "from_ref", None),
+                    "to": getattr(event, "to_ref", None),
+                    "usage": last_windows,
+                }
+            )
+            return
+        if event.kind in ("error", "account-quarantined"):
+            history.record({"kind": event.kind, "detail": event.human()})
+
     def jsonl_emit(event: AutoSwitchEvent) -> None:
+        remember(event)
         print(json.dumps(event.to_json()), flush=True)
 
     def human_emit(event: AutoSwitchEvent) -> None:
+        remember(event)
         stamp = _time.strftime("%H:%M:%S")
         line = event.human()
         if event.kind == "switch":
@@ -916,6 +944,16 @@ Defaults live in settings.json in the backup root; flags override them.
                     f"{weekly}, every {settings.interval_seconds:.0f}s"
                     f"{' (dry-run)' if args.dry_run else ''} — Ctrl-C to stop"
                 )
+            )
+        if not args.dry_run:
+            history.record(
+                {
+                    "kind": "daemon-start",
+                    "detail": f"5h line {pct_label(settings.threshold)}%, "
+                    f"weekly line {pct_label(settings.weekly_threshold)}%"
+                    if settings.weekly_threshold is not None
+                    else f"5h line {pct_label(settings.threshold)}%",
+                }
             )
         sys.exit(engine.run_loop())
     except ClaudeSwitchError as e:
@@ -1156,6 +1194,25 @@ def _menubar_service(args) -> int:
     return 0
 
 
+def _history_command(argv: list[str]) -> None:
+    """Handle `g2swap history [-n COUNT]`."""
+    import argparse
+
+    from claude_swap import history
+
+    parser = argparse.ArgumentParser(
+        prog="g2swap history", description="Show recent switches and why they happened."
+    )
+    parser.add_argument("-n", type=int, default=20, help="How many entries (default 20)")
+    args = parser.parse_args(argv)
+    entries = history.recent(args.n)
+    if not entries:
+        print("No switches recorded yet.")
+        return
+    for entry in entries:
+        print(history.describe(entry))
+
+
 def _update_command(argv: list[str]) -> None:
     """Handle `g2swap update [--yes] [--check]`."""
     import argparse
@@ -1223,6 +1280,9 @@ def main() -> None:
         return  # only reachable in tests where sys.exit is mocked
     if argv and argv[0] == "watchdog":
         _watchdog_command(argv[1:])
+        return
+    if argv and argv[0] in ("history", "log"):
+        _history_command(argv[1:])
         return
     if argv and argv[0] in ("update", "upgrade"):
         _update_command(argv[1:])
@@ -1308,6 +1368,7 @@ Commands:
   %(prog)s watch                      dashboard, opened on the live watch page
   %(prog)s menubar                    macOS menu bar app
   %(prog)s menubar --install-service  keep the menu bar running via launchd
+  %(prog)s history [-n N]             recent switches and why they happened
   %(prog)s update [--yes|--check]     install the latest release (asks first)
   %(prog)s purge                      remove all claude-swap data
 
