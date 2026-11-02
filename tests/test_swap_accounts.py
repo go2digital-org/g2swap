@@ -1,4 +1,4 @@
-"""Tests for `cswap swap` (ClaudeAccountSwitcher.swap_accounts)."""
+"""Tests for `g2swap swap` (ClaudeAccountSwitcher.swap_accounts)."""
 
 import errno
 import json
@@ -53,7 +53,7 @@ class TestSwapAccounts:
 
     def test_swap_keeps_sequence_sorted(self, temp_home: Path, sample_sequence_data: dict):
         """Sequence stays sorted, so rotation and list order follow the new
-        numbers — the accounts genuinely trade places in `cswap list`."""
+        numbers — the accounts genuinely trade places in `g2swap list`."""
         switcher = ClaudeAccountSwitcher()
         self._write(switcher, sample_sequence_data)
 

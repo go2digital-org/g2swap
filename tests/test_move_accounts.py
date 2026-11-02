@@ -1,4 +1,4 @@
-"""Tests for `cswap move` (ClaudeAccountSwitcher.move_account)."""
+"""Tests for `g2swap move` (ClaudeAccountSwitcher.move_account)."""
 
 import os
 import sys

@@ -120,7 +120,7 @@ _FSYNC_UNSUPPORTED = frozenset(
 # Module-level so a test can pin the fallback without touching ``os.path``.
 _RESOLVE_STRICT = getattr(os.path, "ALLOW_MISSING", True)
 
-# NAME_MAX is 255 bytes on every filesystem cswap meets, and ``mkstemp`` adds
+# NAME_MAX is 255 bytes on every filesystem g2swap meets, and ``mkstemp`` adds
 # eight random characters plus ``.tmp`` to the prefix. A prefix carrying the
 # whole destination name would push a legal 243+ character destination over
 # the limit -- ENAMETOOLONG at the temp, for a file that itself fits. Keep

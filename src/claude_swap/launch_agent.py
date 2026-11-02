@@ -1,10 +1,10 @@
-"""Run ``cswap menubar`` as a launchd LaunchAgent instead of a foreground process.
+"""Run ``g2swap menubar`` as a launchd LaunchAgent instead of a foreground process.
 
-``cswap menubar`` blocks the terminal that started it, so the status item dies
+``g2swap menubar`` blocks the terminal that started it, so the status item dies
 with that terminal — and never comes back after a logout or reboot. launchd is
 the native macOS answer: a per-user LaunchAgent starts the menu bar at login and
 restarts it if it crashes. (The wrapper ``.app`` the menu bar runs inside is
-``claude_swap.app_bundle``'s business: ``cswap menubar`` builds it and execs
+``claude_swap.app_bundle``'s business: ``g2swap menubar`` builds it and execs
 into it itself, so launchd only ever needs the console script.)
 
 Two decisions here are worth stating, because both differ from the obvious
@@ -12,9 +12,9 @@ approach:
 
 *The plist pins the console script, not ``sys.executable``.* A LaunchAgent
 outlives upgrades, and the two paths age differently: ``uv tool upgrade`` (and
-``cswap upgrade``) rebuilds the tool's virtualenv — ``sys.executable`` points
+``g2swap upgrade``) rebuilds the tool's virtualenv — ``sys.executable`` points
 inside that virtualenv and can be replaced — while the console script keeps its
-path across upgrades. Pinning the script means an upgraded cswap needs a
+path across upgrades. Pinning the script means an upgraded g2swap needs a
 ``launchctl kickstart``, not a reinstalled service. ``sys.executable -m
 claude_swap`` stays as the fallback for installs that expose no console script.
 
@@ -115,10 +115,10 @@ def resolve_program() -> list[str]:
     candidate = sys.argv[0] if sys.argv and sys.argv[0] else None
     if candidate is not None:
         absolute = Path(os.path.abspath(candidate))
-        if absolute.name == "cswap" and absolute.is_file():
+        if absolute.name == "g2swap" and absolute.is_file():
             return [str(absolute)]
 
-    which = shutil.which("cswap")
+    which = shutil.which("g2swap")
     if which:
         return [str(Path(os.path.abspath(which)))]
 

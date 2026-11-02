@@ -70,11 +70,11 @@ if [[ ! -d "$INSTALL_DIR/.git" ]]; then
   git clone "$REPO_URL" "$INSTALL_DIR"
 fi
 
-# ── 3. Install cswap globally via uv tool ─────────────────────────────────────
-echo "  Installing cswap..."
+# ── 3. Install g2swap globally via uv tool ─────────────────────────────────────
+echo "  Installing g2swap..."
 uv tool install "$INSTALL_DIR" --reinstall
 export PATH="$HOME/.local/bin:$PATH"
-echo "  cswap: $(cswap --version)"
+echo "  g2swap: $(g2swap --version)"
 
 # ── 4. Set up auto-daemon ──────────────────────────────────────────────────────
 if [[ $NO_DAEMON -eq 0 ]]; then
@@ -83,7 +83,7 @@ if [[ $NO_DAEMON -eq 0 ]]; then
 
   if [[ "$OS" == "macos" ]]; then
     PLIST="$HOME/Library/LaunchAgents/g2swap.auto.plist"
-    CSWAP_BIN="$(command -v cswap)"
+    CSWAP_BIN="$(command -v g2swap)"
     cat > "$PLIST" << PLIST_EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -151,10 +151,15 @@ WD_EOF
   elif [[ "$OS" == "linux" || "$OS" == "wsl" ]]; then
     SYSTEMD_DIR="$HOME/.config/systemd/user"
     mkdir -p "$SYSTEMD_DIR"
-    CSWAP_BIN="$(command -v cswap)"
-    cat > "$SYSTEMD_DIR/cswap-auto.service" << SVC_EOF
+    # Services were named cswap-* before the rename; remove them so only one set runs.
+    for old in cswap-auto cswap-watchdog; do
+      systemctl --user disable --now "$old.service" &>/dev/null || true
+      rm -f "$SYSTEMD_DIR/$old.service"
+    done
+    CSWAP_BIN="$(command -v g2swap)"
+    cat > "$SYSTEMD_DIR/g2swap-auto.service" << SVC_EOF
 [Unit]
-Description=cswap auto account switcher
+Description=g2swap auto account switcher
 After=network.target
 
 [Service]
@@ -169,9 +174,9 @@ Environment=PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
 [Install]
 WantedBy=default.target
 SVC_EOF
-    cat > "$SYSTEMD_DIR/cswap-watchdog.service" << WDSVC_EOF
+    cat > "$SYSTEMD_DIR/g2swap-watchdog.service" << WDSVC_EOF
 [Unit]
-Description=cswap hard-limit watchdog
+Description=g2swap hard-limit watchdog
 After=network.target
 
 [Service]
@@ -190,18 +195,18 @@ WDSVC_EOF
     command -v systemctl &>/dev/null && systemctl --user status &>/dev/null 2>&1 && HAVE_SYSTEMD=1
     if [[ $HAVE_SYSTEMD -eq 1 ]]; then
       systemctl --user daemon-reload
-      systemctl --user enable --now cswap-auto.service cswap-watchdog.service
+      systemctl --user enable --now g2swap-auto.service g2swap-watchdog.service
       echo "  Auto-daemon and watchdog: systemd user services enabled"
     fi
     if [[ $HAVE_SYSTEMD -eq 0 ]]; then
-      echo "  Service files written to $SYSTEMD_DIR (cswap-auto, cswap-watchdog)"
-      echo "  (systemd not available in this environment — start manually: cswap auto & cswap watchdog &)"
+      echo "  Service files written to $SYSTEMD_DIR (g2swap-auto, g2swap-watchdog)"
+      echo "  (systemd not available in this environment — start manually: g2swap auto & g2swap watchdog &)"
     fi
   fi
 fi
 
 # ── Weekly line: keep the 5-hour threshold at its default, let weekly windows run higher
-cswap config set autoswitch.weeklyThreshold 97 &>/dev/null || true
+g2swap config set autoswitch.weeklyThreshold 97 &>/dev/null || true
 
 # ── 5. Add the shell command to the shell profile ───────────────────────────────────────
 if [[ $NO_ALIAS -eq 0 ]]; then
@@ -232,31 +237,31 @@ __ALIAS__() {
       [[ "$mode" == "on" ]] && launchctl load "$plist" 2>/dev/null && echo "  Auto-switch ON"
       return 0
     fi
-    systemctl --user is-active --quiet cswap-auto.service && running=1
+    systemctl --user is-active --quiet g2swap-auto.service && running=1
     [[ "$mode" == "toggle" && $running -eq 1 ]] && mode="off"
     [[ "$mode" == "toggle" ]] && mode="on"
-    [[ "$mode" == "off" ]] && systemctl --user stop cswap-auto.service && echo "  Auto-switch OFF (manual mode)"
-    [[ "$mode" == "on" ]] && systemctl --user start cswap-auto.service && echo "  Auto-switch ON"
+    [[ "$mode" == "off" ]] && systemctl --user stop g2swap-auto.service && echo "  Auto-switch OFF (manual mode)"
+    [[ "$mode" == "on" ]] && systemctl --user start g2swap-auto.service && echo "  Auto-switch ON"
     return 0
   fi
   if [[ "$1" == "add-account" ]]; then
     local original_email original_slot
-    original_email=$(cswap status --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('active',{}).get('email',''))" 2>/dev/null)
-    original_slot=$(cswap status --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('active',{}).get('number',''))" 2>/dev/null)
+    original_email=$(g2swap status --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('active',{}).get('email',''))" 2>/dev/null)
+    original_slot=$(g2swap status --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('active',{}).get('number',''))" 2>/dev/null)
     echo "" && echo "  Add new Claude account" && echo "  Current: $original_email"
     echo "" && echo "  This will log you out temporarily, open a browser, then restore $original_email."
     echo "" && printf '  Proceed? (y/N): '; read -r confirm
     [[ "$confirm" != [yY] ]] && echo "  Cancelled." && return 0
     claude auth logout &>/dev/null
     claude auth login
-    cswap add
-    cswap switch "$original_slot" &>/dev/null
+    g2swap add
+    g2swap switch "$original_slot" &>/dev/null
     echo "  Done. Back on $original_email."
     return 0
   fi
   if [[ "$1" == "smart-priority" ]]; then
     printf '\n  Detecting plan types...\n\n'
-    cswap list --json 2>/dev/null | python3 -c "
+    g2swap list --json 2>/dev/null | python3 -c "
 import sys, json, subprocess
 data = json.load(sys.stdin)
 for acc in data['accounts']:
@@ -272,18 +277,18 @@ for acc in data['accounts']:
         (True, True): ('Max 5x', 2),
         (False, True): ('Pro', 10),
     }.get((has_premium, has_5h), ('Uncertain (treating as Max)', 3))
-    subprocess.run(['cswap', 'priority', str(n), str(pri)], capture_output=True)
+    subprocess.run(['g2swap', 'priority', str(n), str(pri)], capture_output=True)
     print(f'  Slot {n}: {email}  =>  {plan}  (priority {pri})')
 "
-    cswap config set autoswitch.strategy priority-consume-first &>/dev/null
-    cswap config set autoswitch.weeklyThreshold 97 &>/dev/null
+    g2swap config set autoswitch.strategy priority-consume-first &>/dev/null
+    g2swap config set autoswitch.weeklyThreshold 97 &>/dev/null
     printf '\n  Strategy: priority-consume-first\n'
     return 0
   fi
   local before after
-  before=$(cswap status --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('active',{}).get('email',''))" 2>/dev/null)
-  [[ $# -eq 0 ]] && cswap tui || cswap "$@"
-  after=$(cswap status --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('active',{}).get('email',''))" 2>/dev/null)
+  before=$(g2swap status --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('active',{}).get('email',''))" 2>/dev/null)
+  [[ $# -eq 0 ]] && g2swap tui || g2swap "$@"
+  after=$(g2swap status --json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('active',{}).get('email',''))" 2>/dev/null)
   if [[ -n "$before" && -n "$after" && "$before" != "$after" ]]; then
     echo "" && echo "  Switched $before -> $after"
     echo "  Reconnecting Remote Control..."

@@ -35,6 +35,7 @@ g2swap keeps several Claude accounts on one machine and moves between them for y
 - **Priority tiers.** `priority-consume-first` drains your Pro accounts before touching a Max 20x account.
 - **Plan detection.** Pro, Max 5x and Max 20x are told apart from the usage shape and ranked automatically.
 - **Limit watchdog.** A 10-second watcher catches a hard limit that lands between two polls and switches immediately. Desktop notifications on macOS and Linux.
+- **Self-update.** `g2swap update` checks the latest GitHub release and installs that exact tag after a yes or no. The dashboard offers the same prompt when a release is out.
 - **Interactive TUI.** One screen for usage, switching, adding accounts, priorities and the auto-switch toggle.
 - **No restart needed.** Claude Code picks up a switch on its next call (on macOS once its Keychain cache expires, about 30 seconds).
 - **Parallel sessions.** `g2swap run 2` launches Claude Code as a specific account in the current terminal only.
@@ -97,6 +98,7 @@ Do not run `/logout` between accounts. Current Claude Code can revoke the refres
 | --- | --- |
 | `g2swap` | Open the TUI. Reconnects Remote Control if the active account changed. |
 | `g2swap auto [on\|off]` | Toggle the auto-switch daemon, or set it explicitly. Off means manual switching only. |
+| `g2swap update` | Check the latest release, ask, then install it. `--yes` skips the question, `--check` only reports. |
 | `g2swap smart-priority` | Detect each account's plan and set priorities. |
 | `g2swap add-account` | Guided flow: log in, store the account, return to the original one. |
 | `g2swap <command>` | Anything else runs as a regular command, for example `g2swap list`, `g2swap switch 2` or `g2swap help`. |

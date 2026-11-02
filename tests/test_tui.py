@@ -289,7 +289,7 @@ class TestFormatting:
         assert tui_data.format_age(400) == "· 6m ago"
 
     def test_sentinel_labels_match_cswap_list(self):
-        # The TUI must describe sentinel states with the exact wording `cswap
+        # The TUI must describe sentinel states with the exact wording `g2swap
         # list` prints — owned-and-expired means Claude Code refreshes the
         # active account, not that the user must re-login.
         assert (
@@ -304,7 +304,7 @@ class TestFormatting:
 
     def test_sentinel_card_shows_last_seen_like_cswap_list(self):
         # A sentinel is a live overlay — the entry can still carry the last
-        # good measurement, and `cswap list` prints it as a "last seen" line.
+        # good measurement, and `g2swap list` prints it as a "last seen" line.
         # The card must too (except for API-key accounts, which have no quota).
         from claude_swap.tui.widgets import account_card_text
 
@@ -383,7 +383,7 @@ class TestSnapshotSource:
 
     def test_every_pass_is_store_governed(self, tmp_path):
         # Pacing lives in the usage store (poll plans + freshness + atomic
-        # reservation), so every take is the same on-demand pass `cswap list`
+        # reservation), so every take is the same on-demand pass `g2swap list`
         # runs — including the user's explicit refresh, which cannot bypass
         # the store's per-account cadence.
         fake, source = self._source(tmp_path)
@@ -1685,7 +1685,7 @@ class TestBareInvocation:
             launched["switcher"] = switcher
             return 0
 
-        monkeypatch.setattr(sys, "argv", ["cswap"])
+        monkeypatch.setattr(sys, "argv", ["g2swap"])
         monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
         monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
         monkeypatch.setattr(tui, "run", fake_run)
@@ -1697,7 +1697,7 @@ class TestBareInvocation:
     def test_bare_non_tty_keeps_usage_error(self, monkeypatch, temp_home):
         import claude_swap.cli as cli
 
-        monkeypatch.setattr(sys, "argv", ["cswap"])
+        monkeypatch.setattr(sys, "argv", ["g2swap"])
         monkeypatch.setattr(sys.stdout, "isatty", lambda: False)
         monkeypatch.setattr(sys.stdin, "isatty", lambda: False)
         with pytest.raises(SystemExit) as excinfo:
@@ -1714,7 +1714,7 @@ class TestBareInvocation:
             launched["start"] = start
             return 0
 
-        monkeypatch.setattr(sys, "argv", ["cswap", "watch"])
+        monkeypatch.setattr(sys, "argv", ["g2swap", "watch"])
         monkeypatch.setattr(tui, "run", fake_run)
         with pytest.raises(SystemExit) as excinfo:
             cli.main()
@@ -1819,3 +1819,44 @@ class TestWeeklyTick:
         assert with_weekly["Fable"] == with_weekly["7d"]
         without = ticks(threshold=85.0)
         assert without["5h"] == without["7d"] == without["Fable"] == with_weekly["5h"]
+
+
+@pytest.mark.asyncio
+class TestUpdateOffer:
+    async def test_newer_release_asks_to_update(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("claude_swap.tui.app.update_available", lambda current: "9.9.9")
+        fake = FakeSwitcher([make_account(1, active=True)], tmp_path)
+        app = make_app(fake)
+        async with app.run_test(size=(100, 40)) as pilot:
+            await settle(pilot)
+            from claude_swap.tui.modals import ConfirmModal
+
+            assert isinstance(app.screen, ConfirmModal)
+            assert "9.9.9" in app.screen._message
+            assert "Update now?" in app.screen._message
+
+    async def test_no_keeps_the_dashboard_and_installs_nothing(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("claude_swap.tui.app.update_available", lambda current: "9.9.9")
+        called = []
+        monkeypatch.setattr(
+            "claude_swap.update_check.run_self_upgrade", lambda *a, **k: called.append(a) or 0
+        )
+        fake = FakeSwitcher([make_account(1, active=True)], tmp_path)
+        app = make_app(fake)
+        async with app.run_test(size=(100, 40)) as pilot:
+            await settle(pilot)
+            await pilot.press("n")
+            await settle(pilot)
+            from claude_swap.tui.dashboard import DashboardScreen
+
+            assert isinstance(app.screen, DashboardScreen)
+            assert called == []
+
+    async def test_up_to_date_shows_no_prompt(self, tmp_path):
+        fake = FakeSwitcher([make_account(1, active=True)], tmp_path)
+        app = make_app(fake)
+        async with app.run_test(size=(100, 40)) as pilot:
+            await settle(pilot)
+            from claude_swap.tui.dashboard import DashboardScreen
+
+            assert isinstance(app.screen, DashboardScreen)

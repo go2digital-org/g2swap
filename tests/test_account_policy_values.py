@@ -98,7 +98,7 @@ class TestNormalizeAccountThreshold:
     def test_error_message_names_the_valid_range(self, raw):
         """The message must name the range — a bare 'invalid value' is not enough.
 
-        This is what `cswap threshold 2 20` prints to the user.
+        This is what `g2swap threshold 2 20` prints to the user.
         """
         with pytest.raises(ValueError) as excinfo:
             normalize_account_threshold(raw)

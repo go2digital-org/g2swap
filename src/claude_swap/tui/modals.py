@@ -135,7 +135,7 @@ class AddAccountModal(ModalScreen[bool]):
     """Confirm adding a new account via claude auth login.
 
     Suspends the TUI, runs ``claude auth logout`` → ``claude auth login``
-    → ``cswap add`` → ``cswap switch <slot>`` to restore the original login.
+    → ``g2swap add`` → ``g2swap switch <slot>`` to restore the original login.
     """
 
     BINDINGS = [
@@ -300,7 +300,7 @@ class PriorityModal(ModalScreen[None]):
         import asyncio
         import shutil
 
-        cswap_bin = shutil.which("cswap") or "cswap"
+        cswap_bin = shutil.which("g2swap") or "g2swap"
         try:
             proc = await asyncio.create_subprocess_exec(
                 cswap_bin,
@@ -320,7 +320,7 @@ class PriorityModal(ModalScreen[None]):
         """Sync fallback used after mutations (priority save)."""
         import shutil
 
-        cswap_bin = shutil.which("cswap") or "cswap"
+        cswap_bin = shutil.which("g2swap") or "g2swap"
         result = subprocess.run(
             [cswap_bin, "list", "--json"], capture_output=True, text=True, timeout=10
         )
@@ -384,7 +384,7 @@ class PriorityModal(ModalScreen[None]):
             return
         import shutil
 
-        cswap_bin = shutil.which("cswap") or "cswap"
+        cswap_bin = shutil.which("g2swap") or "g2swap"
         number, priority = result
         subprocess.run([cswap_bin, "priority", str(number), str(priority)], capture_output=True)
         self._load_accounts()
@@ -392,7 +392,7 @@ class PriorityModal(ModalScreen[None]):
     def action_auto_detect(self) -> None:
         import shutil
 
-        cswap_bin = shutil.which("cswap") or "cswap"
+        cswap_bin = shutil.which("g2swap") or "g2swap"
         result = subprocess.run(
             [cswap_bin, "list", "--json"], capture_output=True, text=True, timeout=10
         )

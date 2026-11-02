@@ -595,7 +595,7 @@ def test_i1_os_rename_source_out_of_protected_root_is_refused(tmp_path: Path, mo
 def test_i2_os_symlink_into_protected_root_is_refused(tmp_path: Path, monkeypatch):
     """I-2: ``os.symlink`` was not even in ``_WRITE_EVENTS``, so a symlink
     planted inside a protected root — aliasing an arbitrary target onto a
-    path a reader (Claude Code, cswap itself) would trust as real store
+    path a reader (Claude Code, g2swap itself) would trust as real store
     content — went through untouched."""
     stand_in_root = tmp_path / "claude-swap"
     stand_in_root.mkdir()
@@ -723,7 +723,7 @@ def test_mkdir_exist_ok_true_does_not_swallow_the_refusal(tmp_path: Path, monkey
 
     # Seed the dir OUTSIDE the guard's view (os.mkdir is unguarded here only
     # via direct filesystem bootstrap, matching how the real backup root
-    # exists on every developer machine before cswap ever runs in-process).
+    # exists on every developer machine before g2swap ever runs in-process).
     monkeypatch.setattr(conftest, "_REAL_STORE_SPECS", ())
     stand_in_root.mkdir(parents=True)
     monkeypatch.setattr(conftest, "_REAL_STORE_SPECS", ((stand_in_root, True),))

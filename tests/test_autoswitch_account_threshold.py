@@ -967,8 +967,8 @@ class TestDefaultIdentity:
 class TestPollCadenceFollowsALivePolicyChange:
     """The pinned minimum is refreshed every tick, not only at birth.
 
-    `cswap threshold 1 50` is written by a **different process** while
-    `cswap auto` is already running - that is the ordinary way a threshold
+    `g2swap threshold 1 50` is written by a **different process** while
+    `g2swap auto` is already running - that is the ordinary way a threshold
     gets changed. `_resolve_thresholds()` re-reads the store every tick, so
     the switch DECISION picks the new line up immediately. But
     `set_poll_policy_inputs` was called in exactly two places, `__init__` and

@@ -1,10 +1,10 @@
-"""macOS menu bar app for claude-swap (``cswap --menubar``).
+"""macOS menu bar app for claude-swap (``g2swap --menubar``).
 
 A thin GUI shell over ``ClaudeAccountSwitcher`` and the core auto-switch engine
 (``claude_swap.autoswitch``) — it never re-implements account, usage, or
 auto-switch logic. Usage for display comes from ``switcher.accounts_snapshot()``
 (backed by the shared usage store); auto-switching, when enabled, runs the same
-``AutoSwitchEngine`` the CLI's ``cswap auto`` drives, sharing
+``AutoSwitchEngine`` the CLI's ``g2swap auto`` drives, sharing
 ``autoswitch_state.json`` and the ``autoswitch.*`` settings. The menu bar keeps
 only its own display preferences.
 
@@ -538,7 +538,7 @@ def framework_build_warning(
 
 
 def run(switcher) -> int:
-    """Entry point for ``cswap --menubar``. Blocks until the user quits."""
+    """Entry point for ``g2swap --menubar``. Blocks until the user quits."""
     try:
         import rumps  # lazy: optional dependency, imported only when launching
         import AppKit  # ships with rumps (pyobjc-framework-Cocoa), never fails alone
@@ -601,7 +601,7 @@ def run(switcher) -> int:
             self._config_path = switcher._get_claude_config_path()
             self._config_mtime = 0.0
             self._last_usage_log: dict = {}  # account num -> last-logged (5h, 7d) key
-            # Auto-switch engine (the same one `cswap auto` runs), hosted in a
+            # Auto-switch engine (the same one `g2swap auto` runs), hosted in a
             # background thread while enabled.
             self._engine = None
             self._engine_events: list = []
@@ -1073,7 +1073,7 @@ def run(switcher) -> int:
                     title="claude-swap",
                     message="Couldn't read the active credential. If the menu bar is running "
                     "as a background/login agent, macOS blocks its Keychain access — "
-                    "quit and relaunch it from a Terminal with: cswap --menubar",
+                    "quit and relaunch it from a Terminal with: g2swap --menubar",
                 )
                 return
             except ClaudeSwitchError as e:

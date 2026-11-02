@@ -30,7 +30,7 @@ active account's own usage becomes unreadable for ``unhealthy_ticks``
 consecutive ticks, the engine fails over to any healthy candidate.
 
 Cooldown and quarantine persist in ``<backup_root>/autoswitch_state.json``
-(so cron-driven ``cswap auto --once`` ticks behave across processes), mutated
+(so cron-driven ``g2swap auto --once`` ticks behave across processes), mutated
 read-modify-write under a dedicated file lock.
 """
 
@@ -81,12 +81,12 @@ _logger = logging.getLogger("claude-swap")
 # cause of the only slot that had one beats "(network?)".
 _SYSTEMIC_MESSAGES = {
     "store-unmirrored": "CLAUDE_SECURESTORAGE_CONFIG_DIR is set — unset it or "
-    "run cswap from a normal shell",
-    "invalid_client": "cswap's OAuth client was rejected — systemic, not this account",
+    "run g2swap from a normal shell",
+    "invalid_client": "g2swap's OAuth client was rejected — systemic, not this account",
     "stash-unreadable": "a stashed successor is unreadable — unlock the "
     "keychain or fix the file, then retry; "
-    "`cswap unclaimed` inspects it",
-    "consume-busy": "another cswap surface holds the slot — retries next pass",
+    "`g2swap unclaimed` inspects it",
+    "consume-busy": "another g2swap surface holds the slot — retries next pass",
 }
 # Insertion order IS the precedence order, so the remedy and its rank cannot
 # drift apart.
@@ -377,7 +377,7 @@ class QuarantineEvent(AutoSwitchEvent):
     def human(self) -> str:
         return (
             f"Account-{self.number} ({self.email}) quarantined: {self.reason}. "
-            f"Log in with it and run 'cswap --add-account --slot {self.number}' "
+            f"Log in with it and run 'g2swap --add-account --slot {self.number}' "
             "to recover."
         )
 
@@ -480,7 +480,7 @@ def _window_pcts(usage: dict | None, models: tuple[str, ...] = ()) -> dict[str, 
     Deliberately restricted to the windows the *decision* reads (same
     ``models`` filter): showing an unconfigured scoped window at 100% next
     to a switch onto that account would look like a bug, when the engine
-    correctly ignored it. Full per-model usage lives in ``cswap list``.
+    correctly ignored it. Full per-model usage lives in ``g2swap list``.
     """
     return {name: pct for name, pct, _ in oauth.relevant_windows(usage, models)}
 
@@ -790,7 +790,7 @@ class AutoSwitchEngine:
         if self.switcher.account_kind_for(number) == "api_key":
             return "ok"  # API keys don't expire/refresh
         if self.switcher.live_session_pids_for(number, email):
-            # A live `cswap run` session owns this account's token in its own
+            # A live `g2swap run` session owns this account's token in its own
             # profile. Auto-activating it as the default login too would put
             # one rotating refresh token in two config dirs (the stale-copy
             # failure class) with nobody reading the warning — and its quota
@@ -947,8 +947,8 @@ class AutoSwitchEngine:
 
         ``set_poll_policy_inputs`` used to be called in exactly two places,
         ``__init__`` and ``apply_threshold()``. Neither is on the path a
-        *persisted* policy write takes: ``cswap threshold 1 50`` runs in a
-        separate process from ``cswap auto``, so a running engine re-read the
+        *persisted* policy write takes: ``g2swap threshold 1 50`` runs in a
+        separate process from ``g2swap auto``, so a running engine re-read the
         new line for its DECISION every tick (``_resolve_thresholds``) while
         its CADENCE stayed pinned to the minimum as it stood at boot.
 
@@ -1060,19 +1060,19 @@ class AutoSwitchEngine:
                 )
             )
             if self.switcher.has_live_login():
-                # Live login exists but cswap doesn't manage it: never act —
+                # Live login exists but g2swap doesn't manage it: never act —
                 # a switch would overwrite it without a backup.
                 self._emit(
                     NoSwitchEvent(
                         reason="unmanaged-active-account",
-                        detail="run 'cswap --add-account' to include it in rotation",
+                        detail="run 'g2swap --add-account' to include it in rotation",
                     )
                 )
             else:
                 self._emit(
                     NoSwitchEvent(
                         reason="no-active-account",
-                        detail="log in and run 'cswap --add-account' first",
+                        detail="log in and run 'g2swap --add-account' first",
                     )
                 )
             return TickOutcome.NO_ACTION
@@ -2409,7 +2409,7 @@ class AutoSwitchEngine:
         # sequence so two concurrent engines (loop + cron --once) make one
         # serialized decision: the loser re-reads the winner's lastSwitchAt
         # and backs off instead of double-switching. No deadlock cycle: the
-        # switch path (cswap FileLock + Claude Code locks) never takes the
+        # switch path (g2swap FileLock + Claude Code locks) never takes the
         # state lock.
         with self._state_lock():
             state = self._read_state()
