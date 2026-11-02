@@ -33,7 +33,7 @@ g2swap keeps several Claude accounts on one machine and moves between them for y
 - **Auto-switch daemon.** A background poller watches 5-hour and 7-day usage and moves to the next account at a threshold (default 80%).
 - **Priority tiers.** `priority-consume-first` drains your Pro accounts before touching a Max 20x account.
 - **Plan detection.** Pro, Max 5x and Max 20x are told apart from the usage shape and ranked automatically.
-- **Limit watchdog (macOS).** A 10-second watcher catches a hard limit that lands between two polls, switches immediately and sends a notification.
+- **Limit watchdog.** A 10-second watcher catches a hard limit that lands between two polls and switches immediately. Desktop notifications on macOS and Linux.
 - **Interactive TUI.** One screen for usage, switching, adding accounts, priorities and the auto-switch toggle.
 - **No restart needed.** Claude Code picks up a switch on its next call (on macOS once its Keychain cache expires, about 30 seconds).
 - **Parallel sessions.** `g2swap run 2` launches Claude Code as a specific account in the current terminal only.
@@ -149,13 +149,12 @@ g2swap config set autoswitch.intervalSeconds 30
 
 ```
 .
-├── src/claude_swap/     Python package: CLI, switcher, auto-switch engine, TUI
+├── src/claude_swap/     Python package: CLI, switcher, auto-switch engine, watchdog, TUI
 │   └── tui/             Textual screens, modals and styles
 ├── tests/               pytest suite
 ├── lefthook.yml         Git hook gates
 ├── scripts/
 │   ├── install/         install.sh (macOS / Linux / WSL), install.ps1 (Windows)
-│   ├── watchdog/        session-watchdog.sh, the hard-limit safety net
 │   └── gates/           Git hook scripts used by lefthook.yml
 └── assets/              Logo and TUI screenshots
 ```
