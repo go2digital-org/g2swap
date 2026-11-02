@@ -1,0 +1,12 @@
+title = "g2swap gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public identifiers that are not secrets"
+regexes = [
+    # Claude Code's public OAuth client id (src/claude_swap/oauth.py). Sent in every
+    # login URL; it identifies the app, not a user.
+    '''9d1c250a-e61b-44d9-88ed-5944d1962f5e''',
+]

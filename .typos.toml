@@ -1,0 +1,11 @@
+[files]
+extend-exclude = ["uv.lock", "assets/**", "tests/fixtures/**"]
+
+[default.extend-words]
+# AIMD is additive-increase/multiplicative-decrease, the polling back-off algorithm.
+AIMD = "AIMD"
+Aimd = "Aimd"
+# Established spelling used throughout the code base and test names.
+unparseable = "unparseable"
+Unparseable = "Unparseable"
+mis = "mis"

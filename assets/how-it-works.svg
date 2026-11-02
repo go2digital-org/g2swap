@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 370" role="img" aria-label="How g2swap works"><style>
+:root{--bg:#ffffff;--card:#f4f6fa;--line:#c9d0dc;--fg:#15181e;--mute:#5b6370;--acc:#2b5fd9;--grn:#1f8a5b}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1218;--card:#171b23;--line:#333b49;--fg:#e8ebf1;--mute:#98a1b0;--acc:#6e97ff;--grn:#4cc38a}}
+text{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;fill:var(--fg)}
+.t{font-size:15px;font-weight:600}.s{font-size:12px;fill:var(--mute)}.l{font-size:11px;fill:var(--mute);letter-spacing:.08em;font-weight:600}
+.b{fill:var(--card);stroke:var(--line);stroke-width:1.2}.d{fill:var(--card);stroke:var(--acc);stroke-width:1.4}
+.a{fill:none;stroke:var(--mute);stroke-width:1.5}.ag{fill:none;stroke:var(--acc);stroke-width:1.8}
+.al{font-size:11px;fill:var(--mute)}
+</style>
+<defs><marker id="h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--mute)"/></marker>
+<marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--acc)"/></marker></defs>
+<rect width="880" height="370" fill="var(--bg)"/>
+<text class="l" x="30" y="30">YOU</text><text class="l" x="340" y="30">BACKGROUND</text><text class="l" x="670" y="30">ANTHROPIC</text>
+<rect class="b" x="30" y="44" width="200" height="64" rx="10"/><text class="t" x="130.0" y="73.0" text-anchor="middle">g2swap</text><text class="s" x="130.0" y="91.0" text-anchor="middle">dashboard (TUI)</text>
+<rect class="b" x="30" y="154" width="200" height="64" rx="10"/><text class="t" x="130.0" y="183.0" text-anchor="middle">Command line</text><text class="s" x="130.0" y="201.0" text-anchor="middle">g2swap &lt;command&gt;</text>
+<rect class="b" x="340" y="44" width="220" height="64" rx="10"/><text class="t" x="450.0" y="73.0" text-anchor="middle">Auto-switch daemon</text><text class="s" x="450.0" y="91.0" text-anchor="middle">polls usage every 30 s</text>
+<rect class="b" x="340" y="154" width="220" height="64" rx="10"/><text class="t" x="450.0" y="183.0" text-anchor="middle">Watchdog</text><text class="s" x="450.0" y="201.0" text-anchor="middle">checks every 10 s</text>
+<rect class="b" x="670" y="44" width="180" height="64" rx="10"/><text class="t" x="760.0" y="73.0" text-anchor="middle">Usage API</text><text class="s" x="760.0" y="91.0" text-anchor="middle">5-hour and 7-day</text>
+<text class="l" x="30" y="262">STORAGE</text><text class="l" x="670" y="262">YOUR SESSIONS</text>
+<rect class="b" x="30" y="276" width="200" height="64" rx="10"/><text class="t" x="130.0" y="305.0" text-anchor="middle">Account store</text><text class="s" x="130.0" y="323.0" text-anchor="middle">one backup per account</text>
+<rect class="b" x="340" y="276" width="220" height="64" rx="10"/><text class="t" x="450.0" y="305.0" text-anchor="middle">Active login</text><text class="s" x="450.0" y="323.0" text-anchor="middle">Keychain or credentials file</text>
+<rect class="b" x="670" y="276" width="180" height="64" rx="10"/><text class="t" x="760.0" y="305.0" text-anchor="middle">Claude Code</text><text class="s" x="760.0" y="323.0" text-anchor="middle">reads the token each call</text>
+<path class="a" d="M130 108V154" marker-end="url(#h)"/>
+<path class="a" d="M130 218V276" marker-end="url(#h)"/><text class="al" x="140" y="252">add, list, priority</text>
+<path class="a" d="M560 76H670" marker-end="url(#h)"/><text class="al" x="592" y="68">read usage</text>
+<path class="ag" d="M340 80H285V172H236" marker-end="url(#g)"/>
+<path class="ag" d="M340 200H236" marker-end="url(#g)"/>
+<text class="al" x="293" y="132">switch</text>
+<path class="a" d="M230 308H340" marker-end="url(#h)"/><text class="al" x="256" y="300">restore</text>
+<path class="a" d="M670 308H560" marker-end="url(#h)"/><text class="al" x="590" y="300">read</text>
+</svg>

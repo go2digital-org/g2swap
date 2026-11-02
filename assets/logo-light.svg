@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 96" role="img" aria-label="g2swap">
+  <g fill="none" stroke="#15181e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="48" cy="48" r="38"/>
+    <path d="M28 40h40m-10-10 10 10-10 10"/>
+    <path d="M68 58H28m10-10-10 10 10 10" stroke="#2b5fd9"/>
+  </g>
+  <text x="108" y="64" font-family="'SF Mono',ui-monospace,Menlo,Consolas,monospace" font-size="52" font-weight="600" letter-spacing="-1" fill="#15181e">g2swap</text>
+</svg>

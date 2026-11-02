@@ -1,0 +1,93 @@
+# lefthook.yml - quality gates for g2swap
+# Install:  brew install lefthook gitleaks typos-cli shellcheck ruff && lefthook install
+# Bypass:   git commit --no-verify   (emergency only)
+#
+# Dry run without committing:
+#   lefthook run pre-commit --all-files
+#   lefthook run pre-commit --job rejecters
+#
+# Hooks only REJECT. They never rewrite or re-stage files. If formatting fails,
+# run scripts/gates/format_fix.sh, review the result and stage it yourself.
+#
+# Every tool gate skips with a message when its binary is missing, so a fresh
+# clone is never blocked by a tool it does not have yet.
+
+min_version: 2.0.0
+
+output:
+  - failure
+  - summary
+
+pre-commit:
+  jobs:
+    - name: rejecters
+      parallel: true
+      group:
+        jobs:
+          - name: gitleaks
+            run: |
+              command -v gitleaks >/dev/null 2>&1 || { echo "gitleaks absent - skipping"; exit 0; }
+              gitleaks protect --staged --redact --verbose
+            fail_text: "Secret detected. Redact it and re-stage."
+
+          - name: typos
+            glob: "*.{py,md,sh,ps1,toml,yml,yaml}"
+            run: |
+              command -v typos >/dev/null 2>&1 || { echo "typos absent - skipping"; exit 0; }
+              typos {staged_files}
+            fail_text: "Spelling. Fix it, or allowlist the word in .typos.toml."
+
+          - name: ruff-check
+            glob: "*.py"
+            run: |
+              command -v ruff >/dev/null 2>&1 || { echo "ruff absent - skipping"; exit 0; }
+              ruff check {staged_files} && ruff format --check {staged_files}
+            fail_text: "Lint or format violations. Run scripts/gates/format_fix.sh, review, stage."
+
+          - name: shellcheck
+            glob: "*.sh"
+            run: |
+              command -v shellcheck >/dev/null 2>&1 || { echo "shellcheck absent - skipping"; exit 0; }
+              shellcheck --severity=warning {staged_files}
+            fail_text: "shellcheck. Quote variables, or add a disable comment with a reason."
+
+          - name: ban-else
+            # Hard ban on else/elif in new files. Files that already existed are
+            # grandfathered until someone edits them for another reason.
+            glob: "*.{py,sh,ps1,js,ts}"
+            run: |
+              git rev-parse -q --verify HEAD >/dev/null || exit 0  # initial import is grandfathered
+              new=$(git diff --cached --name-only --diff-filter=A -- {staged_files})
+              test -z "$new" && exit 0
+              python3 scripts/gates/ban_else.py $new
+            fail_text: "else/elif is banned. Use guard clauses, early returns or a lookup table."
+
+          - name: no-secrets-files
+            run: |
+              bad=$(git diff --cached --name-only --diff-filter=A | grep -E '(^|/)(\.env|.*\.pem|.*\.key|id_rsa.*|credentials\.json)$' || true)
+              test -z "$bad" && exit 0
+              echo "$bad"
+              exit 1
+            fail_text: "A credentials-style file is staged. Remove it from the commit."
+
+commit-msg:
+  jobs:
+    - name: message-check
+      run: python3 scripts/gates/check_commit_msg.py {1}
+      fail_text: "Commit message rejected. Read the output above."
+
+pre-push:
+  parallel: true
+  jobs:
+    - name: tests
+      run: uv run pytest -q
+      fail_text: "Test suite failed."
+
+    - name: ban-else-delta
+      run: |
+        base=$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || true)
+        test -z "$base" && exit 0
+        new=$(git diff --name-only --diff-filter=A "$base"...HEAD | grep -E '\.(py|sh|ps1|js|ts)$' || true)
+        test -z "$new" && exit 0
+        python3 scripts/gates/ban_else.py $new
+      fail_text: "else/elif is banned in new files."

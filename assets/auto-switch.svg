@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 340" role="img" aria-label="How auto-switch decides"><style>
+:root{--bg:#ffffff;--card:#f4f6fa;--line:#c9d0dc;--fg:#15181e;--mute:#5b6370;--acc:#2b5fd9;--grn:#1f8a5b}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1218;--card:#171b23;--line:#333b49;--fg:#e8ebf1;--mute:#98a1b0;--acc:#6e97ff;--grn:#4cc38a}}
+text{font-family:-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;fill:var(--fg)}
+.t{font-size:15px;font-weight:600}.s{font-size:12px;fill:var(--mute)}.l{font-size:11px;fill:var(--mute);letter-spacing:.08em;font-weight:600}
+.b{fill:var(--card);stroke:var(--line);stroke-width:1.2}.d{fill:var(--card);stroke:var(--acc);stroke-width:1.4}
+.a{fill:none;stroke:var(--mute);stroke-width:1.5}.ag{fill:none;stroke:var(--acc);stroke-width:1.8}
+.al{font-size:11px;fill:var(--mute)}
+</style>
+<defs><marker id="h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--mute)"/></marker>
+<marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--acc)"/></marker></defs>
+<rect width="940" height="340" fill="var(--bg)"/>
+<text class="l" x="30" y="22">AUTO-SWITCH DAEMON  ·  5-HOUR LINE 80%, WEEKLY LINE 97%</text>
+<rect class="b" x="30" y="44" width="140" height="60" rx="10"/><text class="t" x="100.0" y="71.0" text-anchor="middle">Poll</text><text class="s" x="100.0" y="89.0" text-anchor="middle">every 30 s</text>
+<path class="d" d="M280 28 L360 74 L280 120 L200 74z"/><text class="t" x="280" y="79" text-anchor="middle">Over the line?</text>
+<rect class="b" x="390" y="44" width="160" height="60" rx="10"/><text class="t" x="470.0" y="71.0" text-anchor="middle">Pick next account</text><text class="s" x="470.0" y="89.0" text-anchor="middle">highest priority first</text>
+<rect class="b" x="590" y="44" width="140" height="60" rx="10"/><text class="t" x="660.0" y="71.0" text-anchor="middle">Swap login</text><text class="s" x="660.0" y="89.0" text-anchor="middle">about 50 ms</text>
+<rect class="b" x="770" y="44" width="140" height="60" rx="10"/><text class="t" x="840.0" y="71.0" text-anchor="middle">Reconnect</text><text class="s" x="840.0" y="89.0" text-anchor="middle">Remote Control</text>
+<path class="a" d="M170 74H200" marker-end="url(#h)"/>
+<path class="ag" d="M360 74H390" marker-end="url(#g)"/><text class="al" x="360" y="64">yes</text>
+<path class="ag" d="M550 74H590" marker-end="url(#g)"/>
+<path class="ag" d="M730 74H770" marker-end="url(#g)"/>
+<path class="a" d="M280 120V150H100V104" marker-end="url(#h)"/><text class="al" x="120" y="143">no: wait</text>
+<text class="l" x="30" y="196">WATCHDOG</text>
+<rect class="b" x="30" y="212" width="140" height="60" rx="10"/><text class="t" x="100.0" y="239.0" text-anchor="middle">Check</text><text class="s" x="100.0" y="257.0" text-anchor="middle">every 10 s</text>
+<path class="d" d="M280 196 L360 242 L280 288 L200 242z"/><text class="t" x="280" y="247" text-anchor="middle">Rate limit hit?</text>
+<rect class="b" x="390" y="212" width="160" height="60" rx="10"/><text class="t" x="470.0" y="239.0" text-anchor="middle">Switch</text><text class="s" x="470.0" y="257.0" text-anchor="middle">next available account</text>
+<rect class="b" x="590" y="212" width="140" height="60" rx="10"/><text class="t" x="660.0" y="239.0" text-anchor="middle">Cooldown</text><text class="s" x="660.0" y="257.0" text-anchor="middle">120 s</text>
+<path class="a" d="M170 242H200" marker-end="url(#h)"/>
+<path class="ag" d="M360 242H390" marker-end="url(#g)"/><text class="al" x="360" y="232">yes</text>
+<path class="ag" d="M550 242H590" marker-end="url(#g)"/>
+<path class="a" d="M280 288V318H100V272" marker-end="url(#h)"/><text class="al" x="120" y="311">no: keep watching</text>
+</svg>

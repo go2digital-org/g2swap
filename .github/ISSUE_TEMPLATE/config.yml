@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Restarts, Keychain caching and common gotchas
+    url: https://github.com/go2digital-org/g2swap#commands
+    about: Switching does not need a restart; macOS picks it up after the Keychain cache expires. See the README.
