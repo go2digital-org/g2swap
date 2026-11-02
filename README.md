@@ -29,6 +29,7 @@ g2swap keeps several Claude accounts on one machine and moves between them for y
 
 ## Features
 
+- **Cross-platform.** Runs on macOS, Linux, Windows and WSL. The daemon and watchdog install as launchd agents, systemd user services or Task Scheduler jobs.
 - **Instant switching.** Swap the active login with `g2swap switch`. Open sessions pick up the new token on their next call.
 - **Auto-switch daemon.** A background poller watches 5-hour and 7-day usage and moves to the next account at a threshold (default 80%).
 - **Priority tiers.** `priority-consume-first` drains your Pro accounts before touching a Max 20x account.
@@ -51,16 +52,13 @@ Example accounts shown. Bars turn amber and red as an account approaches its lim
 macOS, Linux and WSL:
 
 ```bash
-curl -fsSL \
-  https://raw.githubusercontent.com/go2digital-org/g2swap/main/scripts/install/install.sh \
-  | bash
+curl -fsSL https://raw.githubusercontent.com/go2digital-org/g2swap/main/scripts/install/install.sh | bash
 ```
 
 Windows (PowerShell):
 
 ```powershell
-$r = "https://raw.githubusercontent.com/go2digital-org/g2swap/main"
-irm "$r/scripts/install/install.ps1" | iex
+irm https://raw.githubusercontent.com/go2digital-org/g2swap/main/scripts/install/install.ps1 | iex
 ```
 
 The installer sets up `uv`, clones the repository to `~/projects/g2swap`, installs `g2swap` globally, registers the auto-switch daemon (launchd, systemd or Task Scheduler) and adds the `g2swap` shell command. It asks which command name to use (default `g2swap`).
@@ -68,15 +66,11 @@ The installer sets up `uv`, clones the repository to `~/projects/g2swap`, instal
 Pass options through the pipe:
 
 ```bash
-curl -fsSL \
-  https://raw.githubusercontent.com/go2digital-org/g2swap/main/scripts/install/install.sh \
-  | bash -s -- --alias=gs --no-daemon
+curl -fsSL https://raw.githubusercontent.com/go2digital-org/g2swap/main/scripts/install/install.sh | bash -s -- --alias=gs --no-daemon
 ```
 
 ```powershell
-$r = "https://raw.githubusercontent.com/go2digital-org/g2swap/main"
-$s = irm "$r/scripts/install/install.ps1"
-& ([scriptblock]::Create($s)) -Alias gs -NoDaemon
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/go2digital-org/g2swap/main/scripts/install/install.ps1))) -Alias gs -NoDaemon
 ```
 
 | Option (sh / PowerShell) | Effect |
