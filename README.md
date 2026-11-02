@@ -13,7 +13,7 @@
   <a href="https://github.com/go2digital-org/g2swap/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/go2digital-org/g2swap/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <img alt="Python 3.12+" src="https://img.shields.io/badge/python-3.12%2B-3776ab?logo=python&logoColor=white">
   <img alt="Platforms" src="https://img.shields.io/badge/macOS%20%7C%20Linux%20%7C%20Windows%20%7C%20WSL-444">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.1.0-2b5fd9">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.2.0-2b5fd9">
   <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-1f8a5b">
   <img alt="Built with Textual" src="https://img.shields.io/badge/TUI-Textual-8a4fd1">
   <img alt="Tests" src="https://img.shields.io/badge/tests-2800%2B-4cc38a">
