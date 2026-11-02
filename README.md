@@ -98,10 +98,13 @@ Do not run `/logout` between accounts. Current Claude Code can revoke the refres
 | --- | --- |
 | `g2swap` | Open the TUI. Reconnects Remote Control if the active account changed. |
 | `g2swap auto [on\|off]` | Toggle the auto-switch daemon, or set it explicitly. Off means manual switching only. |
+| `g2swap history [-n N]` | Recent switches: when, which trigger, who switched (daemon or watchdog) and every account's usage at that moment. |
 | `g2swap update` | Check the latest release, ask, then install it. `--yes` skips the question, `--check` only reports. |
 | `g2swap smart-priority` | Detect each account's plan and set priorities. |
 | `g2swap add-account` | Guided flow: log in, store the account, return to the original one. |
 | `g2swap <command>` | Anything else runs as a regular command, for example `g2swap list`, `g2swap switch 2` or `g2swap help`. |
+
+The dashboard shows a badge under the banner: green **AUTO-SWITCH ON** or amber **MANUAL MODE**, read from the real daemon state. `m` toggles it.
 
 In the TUI: `a` adds an account, `p` opens priorities, and the auto-switch screen toggles between **Manual mode** and **Auto-switch on**. Manual switching works in both modes.
 

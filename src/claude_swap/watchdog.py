@@ -16,6 +16,8 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 
+from claude_swap import history
+
 POLL_INTERVAL_S = 10
 COOLDOWN_S = 120
 LOG_FRESH_S = 60
@@ -103,9 +105,19 @@ class Watchdog:
         if reason is None:
             return False
         log(f"{reason}, switching")
+        _, old_account = self.active()
         self._run("switch", "--strategy", "next-available")
         self.last_switch = now
         _, new_account = self.active()
+        history.record(
+            {
+                "kind": "switch",
+                "source": "watchdog",
+                "trigger": reason,
+                "from": {"email": old_account},
+                "to": {"email": new_account},
+            }
+        )
         log(f"Switched to {new_account}")
         self._notify(f"Switched to {new_account}. Open a new Claude session.")
         return True

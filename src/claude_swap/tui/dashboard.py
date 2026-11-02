@@ -25,6 +25,7 @@ from textual.binding import Binding
 from textual.screen import Screen
 from textual.widgets import Footer, ListView, Static
 
+from claude_swap import daemon
 from claude_swap.models import AccountsSnapshot
 from claude_swap.tui.widgets import AccountItem, AccountsPanel, MenuItem
 
@@ -52,6 +53,7 @@ class DashboardScreen(Screen):
         Binding("w", "app.open_watch", "Watch"),
         Binding("a", "app.add_new_account", "Add account"),
         Binding("p", "app.show_priorities", "Priorities"),
+        Binding("m", "toggle_mode", "Auto / manual"),
         Binding("escape,left", "menu_back", "Back", show=False),
         Binding("q", "app.quit", "Quit"),
         # Power shortcuts; the menu is the discoverable path.
@@ -70,6 +72,7 @@ class DashboardScreen(Screen):
 
     def compose(self) -> ComposeResult:
         yield Static(BRAND_BANNER, id="brand")
+        yield Static("", id="mode-banner")
         yield AccountsPanel(id="accounts-panel")
         yield Static("", id="menu-title")
         yield ListView(id="menu")
@@ -78,6 +81,49 @@ class DashboardScreen(Screen):
     async def on_mount(self) -> None:
         self.query_one("#menu", ListView).focus()
         await self._push_menu("menu", self._root_entries())
+        self._refresh_mode()
+        self.set_interval(5.0, self._refresh_mode)
+
+    # -- auto-switch mode banner ------------------------------------------------
+
+    def _refresh_mode(self) -> None:
+        self.run_worker(
+            self._read_mode, thread=True, group="mode", exclusive=True, exit_on_error=False
+        )
+
+    def _read_mode(self) -> None:
+        state = daemon.running()
+        self.app.call_from_thread(self._show_mode, state)
+
+    def _show_mode(self, state: bool | None) -> None:
+        if not self.is_attached:
+            return
+        banner = self.query_one("#mode-banner", Static)
+        if state is None:
+            banner.update("[b] ○ MANUAL MODE [/b] [dim]no auto-switch daemon installed[/dim]")
+            banner.set_classes("manual")
+            return
+        if state:
+            banner.update(
+                "[b] ● AUTO-SWITCH ON [/b] [dim]switches by itself · m turns it off[/dim]"
+            )
+            banner.set_classes("auto")
+            return
+        banner.update(
+            "[b] ○ MANUAL MODE [/b] [dim]you switch by hand · m turns auto-switch on[/dim]"
+        )
+        banner.set_classes("manual")
+
+    def action_toggle_mode(self) -> None:
+        state = daemon.running()
+        if state is None:
+            self.notify("No auto-switch daemon installed. Run the installer.", severity="warning")
+            return
+        if daemon.set_running(not state):
+            self.notify("Auto-switch on" if not state else "Manual mode", timeout=2)
+        else:
+            self.notify("Could not change the background daemon", severity="error")
+        self._refresh_mode()
 
     # -- menu plumbing --------------------------------------------------------
 
