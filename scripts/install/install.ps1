@@ -54,6 +54,11 @@ if (-not $NoDaemon) {
         -Settings $settings -RunLevel Highest -Force | Out-Null
     Start-ScheduledTask -TaskName "cswap-auto" 2>$null
     Write-Host "  Auto-daemon: Task Scheduler job registered (runs at login)"
+    $wdAction = New-ScheduledTaskAction -Execute $cswapBin -Argument "watchdog"
+    Register-ScheduledTask -TaskName "cswap-watchdog" -Action $wdAction -Trigger $trigger `
+        -Settings $settings -RunLevel Highest -Force | Out-Null
+    Start-ScheduledTask -TaskName "cswap-watchdog" 2>$null
+    Write-Host "  Watchdog: Task Scheduler job registered (runs at login)"
 }
 
 # 5. Add the shell function to PowerShell profile
