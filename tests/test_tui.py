@@ -1283,6 +1283,8 @@ class _FakeEngine:
 def fake_engine(monkeypatch):
     _FakeEngine.instances = []
     monkeypatch.setattr("claude_swap.tui.autoview.AutoSwitchEngine", _FakeEngine)
+    # Never read the real machine's daemon; tests opt in to a daemon state.
+    monkeypatch.setattr("claude_swap.tui.autoview.daemon.running", lambda: None)
     return _FakeEngine
 
 
@@ -1309,6 +1311,42 @@ class TestAutoScreen:
             from textual.widgets import RichLog
 
             assert len(app.screen.query_one("#event-log", RichLog).lines) > 0
+
+    async def test_badge_shows_daemon_on_instead_of_manual(
+        self, tmp_path, fake_engine, monkeypatch
+    ):
+        monkeypatch.setattr("claude_swap.tui.autoview.daemon.running", lambda: True)
+        fake = FakeSwitcher([make_account(1, active=True), make_account(2)], tmp_path)
+        app = make_app(fake)
+        async with app.run_test(size=(100, 40)) as pilot:
+            await self._open(pilot)
+            await settle(pilot)
+            from textual.widgets import Static
+
+            badge = app.screen.query_one("#mode-badge", Static)
+            assert "Auto-switch on" in str(badge.render())
+            # the in-view engine stays an observer so it cannot race the daemon
+            assert fake_engine.instances[0].dry_run is True
+
+    async def test_l_controls_the_daemon_not_a_second_engine(
+        self, tmp_path, fake_engine, monkeypatch
+    ):
+        calls = []
+        monkeypatch.setattr("claude_swap.tui.autoview.daemon.running", lambda: True)
+        monkeypatch.setattr(
+            "claude_swap.tui.autoview.daemon.set_running", lambda on: calls.append(on) or True
+        )
+        fake = FakeSwitcher([make_account(1, active=True), make_account(2)], tmp_path)
+        app = make_app(fake)
+        async with app.run_test(size=(100, 40)) as pilot:
+            await self._open(pilot)
+            await pilot.press("l")
+            await settle(pilot)
+            from textual.widgets import Static
+
+            assert calls == [False]
+            assert "Manual mode" in str(app.screen.query_one("#mode-badge", Static).render())
+            assert len(fake_engine.instances) == 1
 
     async def test_go_live_requires_confirmation(self, tmp_path, fake_engine):
         fake = FakeSwitcher([make_account(1, active=True), make_account(2)], tmp_path)

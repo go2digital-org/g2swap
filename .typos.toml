@@ -9,3 +9,5 @@ Aimd = "Aimd"
 unparseable = "unparseable"
 Unparseable = "Unparseable"
 mis = "mis"
+# schtasks format flag (/FO LIST).
+FO = "FO"
