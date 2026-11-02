@@ -34,6 +34,7 @@ from claude_swap.tui.modals import (
     TokenForm,
 )
 from claude_swap.tui.theme import CSWAP_DARK, CSWAP_LIGHT
+from claude_swap.update_check import update_available
 
 
 class CswapApp(App):
@@ -66,7 +67,7 @@ class CswapApp(App):
     ) -> None:
         super().__init__()
         self.switcher = switcher
-        self._start = start  # "dashboard" | "watch" (`cswap watch`)
+        self._start = start  # "dashboard" | "watch" (`g2swap watch`)
         self._detected = detected  # terminal background sensed pre-driver, or None
         self.source = SnapshotSource(switcher)
         self._store_only = False
@@ -107,6 +108,42 @@ class CswapApp(App):
         self.set_interval(self.POLL_INTERVAL_S, self._tick)
         self.set_interval(1.0, self._update_refresh_status)
         self._tick()
+        self.run_worker(self._look_for_update, thread=True, group="update", exit_on_error=False)
+
+    # -- update offer -----------------------------------------------------------
+
+    def _look_for_update(self) -> None:
+        """Worker thread: ask GitHub (cached for a day) whether a newer release exists."""
+        from claude_swap import __version__
+        from claude_swap.settings import load_update_settings
+
+        if not load_update_settings(self.switcher.backup_dir).check:
+            return
+        latest = update_available(__version__)
+        if latest is not None:
+            self.call_from_thread(self._offer_update, __version__, latest)
+
+    def _offer_update(self, current: str, latest: str) -> None:
+        self.push_screen(
+            ConfirmModal(
+                f"Update available: {current} -> {latest}\n\nUpdate now?",
+                title="Update available",
+                yes_label="Update",
+            ),
+            self._on_update_confirm,
+        )
+
+    def _on_update_confirm(self, confirmed: bool | None) -> None:
+        if not confirmed:
+            return
+        from claude_swap import __version__
+        from claude_swap.update_check import run_self_upgrade
+
+        with self.suspend():
+            code = run_self_upgrade(__version__, assume_yes=True)
+            input("\nPress Enter to return to g2swap. ")
+        if 0 == code:
+            self.notify("Restart g2swap to use the new version.", timeout=6)
 
     # -- snapshot poll loop ---------------------------------------------------
 
@@ -368,7 +405,7 @@ class CswapApp(App):
         import subprocess
 
         claude_bin = shutil.which("claude") or "claude"
-        cswap_bin = shutil.which("cswap") or "cswap"
+        cswap_bin = shutil.which("g2swap") or "g2swap"
         error_msg: str | None = None
         with self.suspend():
             subprocess.run([claude_bin, "auth", "logout"], capture_output=True)
@@ -378,7 +415,7 @@ class CswapApp(App):
             else:
                 r_add = subprocess.run([cswap_bin, "add"], capture_output=True)
                 if r_add.returncode != 0:
-                    error_msg = "cswap add failed — credentials may not have been captured."
+                    error_msg = "g2swap add failed — credentials may not have been captured."
                 else:
                     subprocess.run([cswap_bin, "switch", str(original_slot)], capture_output=True)
                     # Detect plan types and set priorities automatically.

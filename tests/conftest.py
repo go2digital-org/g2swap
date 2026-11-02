@@ -91,12 +91,12 @@ def _freeze_real_store_specs() -> tuple[tuple[Path, bool], ...]:
       Both must be protected: the default-profile developer and the
       override-profile developer are both real users of this same conftest.
 
-    ``recursive=True`` roots (the cswap backup root, current-XDG and legacy)
-    are exclusively cswap's own data — everything beneath them is protected,
+    ``recursive=True`` roots (the g2swap backup root, current-XDG and legacy)
+    are exclusively g2swap's own data — everything beneath them is protected,
     any depth. This applies to an override-derived backup root too: it's
-    still cswap's own data regardless of which env var pointed at it.
+    still g2swap's own data regardless of which env var pointed at it.
 
-    ``recursive=False`` roots are directories cswap shares with unrelated
+    ``recursive=False`` roots are directories g2swap shares with unrelated
     machinery — notably ``~/.claude``, which also holds Claude Code CLI's
     OWN job/worktree/project state (this worktree itself lives under
     ``~/.claude/jobs/...``, several directories deep) and can contain a
@@ -729,6 +729,13 @@ def _deterministic_poll_jitter(monkeypatch):
     """Zero the poll-plan jitter so cadence tests are clock-exact; the jitter
     itself is exercised in test_poll_policy via an injected rng."""
     monkeypatch.setattr("claude_swap.poll_policy.JITTER_FRAC", 0.0)
+
+
+@pytest.fixture(autouse=True)
+def _no_update_lookup(monkeypatch):
+    """The TUI looks for a newer release at startup; no test may reach GitHub.
+    Tests of the offer patch this to return a version."""
+    monkeypatch.setattr("claude_swap.tui.app.update_available", lambda current: None)
 
 
 @pytest.fixture(autouse=True)

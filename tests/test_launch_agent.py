@@ -1,4 +1,4 @@
-"""Tests for the launchd LaunchAgent that keeps ``cswap menubar`` alive.
+"""Tests for the launchd LaunchAgent that keeps ``g2swap menubar`` alive.
 
 ``subprocess.run`` is patched throughout so the real ``launchctl`` is never
 driven: these assert the argv this module *shapes* and how it reads launchctl's
@@ -95,7 +95,7 @@ def test_build_plist_path_env_leads_with_the_programs_own_directory(tmp_path):
     reason="asserts POSIX path shapes; the agent only ever runs on macOS",
 )
 def test_build_plist_path_env_includes_the_user_bin_dir(tmp_path):
-    # A uv tool install puts cswap's siblings in ~/.local/bin; launchd's own
+    # A uv tool install puts g2swap's siblings in ~/.local/bin; launchd's own
     # default PATH does not include it.
     parsed = plistlib.loads(launch_agent.build_plist(PROGRAM, home=tmp_path))
     entries = parsed["EnvironmentVariables"]["PATH"].split(":")
@@ -152,7 +152,7 @@ def test_build_plist_env_without_allowlisted_keys_is_just_path(tmp_path):
 
 
 def test_resolve_program_prefers_the_console_script(tmp_path):
-    script = tmp_path / "cswap"
+    script = tmp_path / "g2swap"
     script.write_text("#!/bin/sh\n")
     with patch.object(launch_agent.sys, "argv", [str(script)]):
         assert launch_agent.resolve_program() == [str(script)]
@@ -166,11 +166,11 @@ def test_resolve_program_keeps_the_symlink_and_does_not_follow_it(tmp_path):
     """
     venv_bin = tmp_path / "venv" / "bin"
     venv_bin.mkdir(parents=True)
-    real = venv_bin / "cswap"
+    real = venv_bin / "g2swap"
     real.write_text("#!/bin/sh\n")
     link_dir = tmp_path / "local" / "bin"
     link_dir.mkdir(parents=True)
-    link = link_dir / "cswap"
+    link = link_dir / "g2swap"
     link.symlink_to(real)
 
     with patch.object(launch_agent.sys, "argv", [str(link)]):
@@ -178,10 +178,10 @@ def test_resolve_program_keeps_the_symlink_and_does_not_follow_it(tmp_path):
 
 
 def test_resolve_program_makes_a_relative_argv0_absolute(tmp_path, monkeypatch):
-    script = tmp_path / "cswap"
+    script = tmp_path / "g2swap"
     script.write_text("#!/bin/sh\n")
     monkeypatch.chdir(tmp_path)
-    with patch.object(launch_agent.sys, "argv", ["./cswap"]):
+    with patch.object(launch_agent.sys, "argv", ["./g2swap"]):
         result = launch_agent.resolve_program()
     assert result == [str(script)]
     assert Path(result[0]).is_absolute()
@@ -198,7 +198,7 @@ def test_resolve_program_ignores_an_argv0_that_is_not_cswap(tmp_path):
     # should be pointed at.
     other = tmp_path / "pytest"
     other.write_text("#!/bin/sh\n")
-    found = tmp_path / "cswap"
+    found = tmp_path / "g2swap"
     found.write_text("#!/bin/sh\n")
     with patch.object(launch_agent.sys, "argv", [str(other)]):
         with patch.object(launch_agent.shutil, "which", return_value=str(found)):

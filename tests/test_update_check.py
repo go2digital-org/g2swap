@@ -11,7 +11,6 @@ import pytest
 from claude_swap.update_check import (
     CACHE_TTL,
     FAILURE_TTL,
-    UPDATE_STEPS,
     _detect_install_method,
     _is_newer,
     _parse_version,
@@ -54,7 +53,7 @@ class TestCheckForUpdate:
         assert result is not None
         assert "1.1.0" in result
         assert "g2swap" in result
-        assert "cswap upgrade" in result
+        assert "g2swap update" in result
 
     def test_tag_without_v_prefix(self, mock_urlopen, cache):
         mock_urlopen.return_value = _release_response("1.1.0")
@@ -154,18 +153,131 @@ class TestDetectInstallMethod:
         assert _detect_install_method() == "uv"
 
 
+class _Install:
+    """Stands in for the uv subprocess and the service restart."""
+
+    def __init__(self, returncode: int = 0) -> None:
+        self.returncode = returncode
+        self.commands: list[list[str]] = []
+        self.restarts = 0
+
+    def run(self, command, check=False):
+        self.commands.append(command)
+        return MagicMock(returncode=self.returncode)
+
+    def restart(self):
+        self.restarts += 1
+        return ["g2swap.auto"]
+
+
+@patch("claude_swap.update_check.urllib.request.urlopen")
 class TestRunSelfUpgrade:
-    @patch("claude_swap.update_check.subprocess", create=True)
-    def test_prints_steps_and_runs_nothing(self, mock_subprocess, capsys):
-        assert run_self_upgrade() == 0
+    def _go(self, install, answer="y", **kwargs):
+        kwargs.setdefault("interactive", True)
+        return run_self_upgrade(
+            "1.0.0",
+            input_fn=lambda prompt: answer,
+            run=install.run,
+            which=lambda name: "/usr/bin/uv",
+            restart=install.restart,
+            **kwargs,
+        )
+
+    def test_up_to_date_does_nothing(self, mock_urlopen, capsys):
+        mock_urlopen.return_value = _release_response("v1.0.0")
+        install = _Install()
+
+        assert self._go(install) == 0
+        assert "up to date" in capsys.readouterr().out
+        assert install.commands == []
+
+    def test_yes_installs_the_release_tag_and_restarts_services(self, mock_urlopen, capsys):
+        mock_urlopen.return_value = _release_response("v1.2.0")
+        install = _Install()
+
+        assert self._go(install, answer="y") == 0
 
         out = capsys.readouterr().out
-        assert out.strip() == UPDATE_STEPS
-        assert "git pull" in out
-        assert "install.sh" in out
-        mock_subprocess.run.assert_not_called()
+        assert "Update available: 1.0.0 -> 1.2.0" in out
+        assert install.commands == [
+            [
+                "uv",
+                "tool",
+                "install",
+                "--reinstall",
+                "git+https://github.com/go2digital-org/g2swap@v1.2.0",
+            ]
+        ]
+        assert install.restarts == 1
+        assert "Updated to 1.2.0" in out
 
-    def test_never_names_the_pypi_package(self, capsys):
-        run_self_upgrade()
+    def test_no_leaves_everything_alone(self, mock_urlopen, capsys):
+        mock_urlopen.return_value = _release_response("v1.2.0")
+        install = _Install()
 
-        assert "pip" not in capsys.readouterr().out.lower()
+        assert self._go(install, answer="n") == 0
+        assert install.commands == []
+        assert install.restarts == 0
+        assert "Not updating" in capsys.readouterr().out
+
+    def test_empty_answer_means_no(self, mock_urlopen):
+        mock_urlopen.return_value = _release_response("v1.2.0")
+        install = _Install()
+
+        self._go(install, answer="")
+        assert install.commands == []
+
+    def test_yes_flag_skips_the_question(self, mock_urlopen):
+        mock_urlopen.return_value = _release_response("v1.2.0")
+        install = _Install()
+
+        assert self._go(install, answer="n", assume_yes=True) == 0
+        assert len(install.commands) == 1
+
+    def test_check_only_reports_without_installing(self, mock_urlopen, capsys):
+        mock_urlopen.return_value = _release_response("v1.2.0")
+        install = _Install()
+
+        assert self._go(install, check_only=True) == 0
+        assert "Update available" in capsys.readouterr().out
+        assert install.commands == []
+
+    def test_no_terminal_and_no_yes_flag_does_not_install(self, mock_urlopen, capsys):
+        mock_urlopen.return_value = _release_response("v1.2.0")
+        install = _Install()
+
+        assert self._go(install, interactive=False) == 0
+        assert install.commands == []
+        assert "--yes" in capsys.readouterr().out
+
+    def test_failed_install_keeps_the_old_version_and_skips_restart(self, mock_urlopen, capsys):
+        mock_urlopen.return_value = _release_response("v1.2.0")
+        install = _Install(returncode=1)
+
+        assert self._go(install, assume_yes=True) == 1
+        assert install.restarts == 0
+        assert "unchanged" in capsys.readouterr().out
+
+    def test_missing_uv_prints_the_manual_command(self, mock_urlopen, capsys):
+        mock_urlopen.return_value = _release_response("v1.2.0")
+        install = _Install()
+
+        code = run_self_upgrade(
+            "1.0.0",
+            assume_yes=True,
+            run=install.run,
+            which=lambda name: None,
+            restart=install.restart,
+        )
+
+        assert code == 1
+        assert "git+https://github.com/go2digital-org/g2swap@v1.2.0" in capsys.readouterr().out
+        assert install.commands == []
+
+    def test_unreachable_github_fails_cleanly(self, mock_urlopen, capsys):
+        mock_urlopen.side_effect = OSError("offline")
+        install = _Install()
+
+        assert self._go(install, assume_yes=True) == 1
+        assert "Could not reach GitHub" in capsys.readouterr().out
+        assert install.commands == []
