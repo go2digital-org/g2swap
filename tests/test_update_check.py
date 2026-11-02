@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import time
 from unittest.mock import MagicMock, patch
 
@@ -180,6 +181,7 @@ class TestRunSelfUpgrade:
             run=install.run,
             which=lambda name: "/usr/bin/uv",
             restart=install.restart,
+            platform="linux",
             **kwargs,
         )
 
@@ -268,6 +270,7 @@ class TestRunSelfUpgrade:
             run=install.run,
             which=lambda name: None,
             restart=install.restart,
+            platform="linux",
         )
 
         assert code == 1
@@ -281,3 +284,27 @@ class TestRunSelfUpgrade:
         assert self._go(install, assume_yes=True) == 1
         assert "Could not reach GitHub" in capsys.readouterr().out
         assert install.commands == []
+
+    def test_windows_installs_detached_after_exit(self, mock_urlopen, capsys, monkeypatch):
+        mock_urlopen.return_value = _release_response("v1.2.0")
+        monkeypatch.setattr(subprocess, "DETACHED_PROCESS", 8, raising=False)
+        monkeypatch.setattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 512, raising=False)
+        install = _Install()
+        spawned = []
+
+        code = run_self_upgrade(
+            "1.0.0",
+            assume_yes=True,
+            run=install.run,
+            which=lambda name: "uv",
+            restart=install.restart,
+            platform="win32",
+            spawn=lambda command, **kwargs: spawned.append((command, kwargs)),
+        )
+
+        assert code == 0
+        assert install.commands == []
+        assert spawned[0][0][:3] == ["uv", "tool", "install"]
+        assert spawned[0][0][-1].endswith("@v1.2.0")
+        assert spawned[0][1]["creationflags"] == 8 | 512
+        assert "background" in capsys.readouterr().out

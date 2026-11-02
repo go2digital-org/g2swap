@@ -168,6 +168,8 @@ def run_self_upgrade(
     run: Callable[..., subprocess.CompletedProcess] = subprocess.run,
     which: Callable[[str], str | None] = shutil.which,
     restart: Callable[[], list[str]] = daemon.restart_all,
+    platform: str = sys.platform,
+    spawn: Callable[..., object] = subprocess.Popen,
 ) -> int:
     """Look up the latest GitHub release and, on a yes, install exactly that tag.
 
@@ -200,11 +202,11 @@ def run_self_upgrade(
         return 1
 
     command = _install_command(tag)
-    if sys.platform == "win32":
+    if "win32" == platform:
         # Windows locks a running executable, so the install runs after this
         # process exits.
         flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP  # type: ignore[attr-defined]
-        subprocess.Popen(command, creationflags=flags, close_fds=True)
+        spawn(command, creationflags=flags, close_fds=True)
         print(f"Installing {latest} in the background. Open a new terminal in a minute.")
         return 0
 
