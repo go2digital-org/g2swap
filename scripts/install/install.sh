@@ -125,8 +125,8 @@ PLIST_EOF
     <string>g2swap.watchdog</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/bash</string>
-        <string>${INSTALL_DIR}/scripts/watchdog/session-watchdog.sh</string>
+        <string>${CSWAP_BIN}</string>
+        <string>watchdog</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
@@ -169,16 +169,33 @@ Environment=PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
 [Install]
 WantedBy=default.target
 SVC_EOF
+    cat > "$SYSTEMD_DIR/cswap-watchdog.service" << WDSVC_EOF
+[Unit]
+Description=cswap hard-limit watchdog
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=${CSWAP_BIN} watchdog
+Restart=always
+RestartSec=5
+StandardOutput=append:${LOG_DIR}/watchdog.log
+StandardError=append:${LOG_DIR}/watchdog.log
+Environment=PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=default.target
+WDSVC_EOF
     HAVE_SYSTEMD=0
     command -v systemctl &>/dev/null && systemctl --user status &>/dev/null 2>&1 && HAVE_SYSTEMD=1
     if [[ $HAVE_SYSTEMD -eq 1 ]]; then
       systemctl --user daemon-reload
-      systemctl --user enable --now cswap-auto.service
-      echo "  Auto-daemon: systemd user service enabled"
+      systemctl --user enable --now cswap-auto.service cswap-watchdog.service
+      echo "  Auto-daemon and watchdog: systemd user services enabled"
     fi
     if [[ $HAVE_SYSTEMD -eq 0 ]]; then
-      echo "  Auto-daemon: service file written to $SYSTEMD_DIR/cswap-auto.service"
-      echo "  (systemd not available in this environment — start manually: cswap auto &)"
+      echo "  Service files written to $SYSTEMD_DIR (cswap-auto, cswap-watchdog)"
+      echo "  (systemd not available in this environment — start manually: cswap auto & cswap watchdog &)"
     fi
   fi
 fi

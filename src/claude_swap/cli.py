@@ -1158,6 +1158,27 @@ def _menubar_service(args) -> int:
     return 0
 
 
+def _watchdog_command(argv: list[str]) -> None:
+    """Handle `cswap watchdog [--once] [--interval SECONDS]`."""
+    import argparse
+
+    from claude_swap.watchdog import POLL_INTERVAL_S, run_watchdog
+
+    parser = argparse.ArgumentParser(
+        prog="cswap watchdog",
+        description="Switch accounts the moment the active one hits a hard limit.",
+    )
+    parser.add_argument("--once", action="store_true", help="Check once and exit")
+    parser.add_argument(
+        "--interval", type=float, default=POLL_INTERVAL_S, help="Seconds between checks"
+    )
+    args = parser.parse_args(argv)
+    try:
+        sys.exit(run_watchdog(once=args.once, interval=args.interval))
+    except KeyboardInterrupt:
+        sys.exit(0)
+
+
 def main() -> None:
     """Main entry point for the CLI."""
     force_utf8_output()
@@ -1182,6 +1203,9 @@ def main() -> None:
     if argv and argv[0] == "auto":
         _auto_command(argv[1:])
         return  # only reachable in tests where sys.exit is mocked
+    if argv and argv[0] == "watchdog":
+        _watchdog_command(argv[1:])
+        return
     if len(sys.argv) > 1 and sys.argv[1] == "config":
         _config_command(sys.argv[2:])
         return
@@ -1253,6 +1277,7 @@ Commands:
   %(prog)s swap <a> <b>               exchange two accounts' slot numbers
   %(prog)s move <a> <slot>            assign an account to a slot (swaps if taken)
   %(prog)s auto                       auto-switch when nearing rate limits
+  %(prog)s watchdog                   switch at once when a hard limit hits
   %(prog)s config [set KEY VALUE]     show or change settings (settings.json)
   %(prog)s unclaimed [--purge ID]     list or drop stashed credential entries
   %(prog)s export <path>              export accounts
