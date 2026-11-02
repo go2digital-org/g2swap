@@ -870,9 +870,10 @@ Defaults live in settings.json in the backup root; flags override them.
     from claude_swap.printer import accent, yellowed
     from claude_swap.settings import load_settings, merged_with_cli
 
-    from claude_swap import history
+    from claude_swap import history, statusfile
 
     last_windows: dict = {}
+    poll_interval = [30.0]
 
     def remember(event: AutoSwitchEvent) -> None:
         """Keep the usage of every account from the latest poll, and write the
@@ -880,6 +881,8 @@ Defaults live in settings.json in the backup root; flags override them.
         nonlocal last_windows
         if "poll" == event.kind:
             last_windows = dict(getattr(event, "windows", {}) or {})
+            if not args.dry_run:
+                statusfile.write_poll(event, poll_interval[0])
             return
         if "switch" == event.kind and not getattr(event, "dry_run", False):
             history.record(
@@ -920,6 +923,7 @@ Defaults live in settings.json in the backup root; flags override them.
                 sys.exit(1)
 
         settings = merged_with_cli(load_settings(switcher.backup_dir), args)
+        poll_interval[0] = settings.interval_seconds
         engine = AutoSwitchEngine(
             switcher,
             settings,
@@ -955,7 +959,10 @@ Defaults live in settings.json in the backup root; flags override them.
                     else f"5h line {pct_label(settings.threshold)}%",
                 }
             )
-        sys.exit(engine.run_loop())
+        code = engine.run_loop()
+        if not args.dry_run:
+            statusfile.write_stopped()
+        sys.exit(code)
     except ClaudeSwitchError as e:
         if args.json:
             print(json.dumps(error_envelope(e)))
@@ -963,6 +970,8 @@ Defaults live in settings.json in the backup root; flags override them.
             error(f"Error: {e}")
         sys.exit(1)
     except KeyboardInterrupt:
+        if not args.dry_run:
+            statusfile.write_stopped()
         print(
             f"\n{dimmed('Auto-switch stopped')}",
             file=sys.stderr if args.json else sys.stdout,
