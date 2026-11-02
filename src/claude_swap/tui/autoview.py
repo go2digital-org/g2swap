@@ -24,7 +24,7 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Footer, RichLog, Static
 
-from claude_swap import oauth
+from claude_swap import daemon, oauth
 from claude_swap.autoswitch import (
     AutoSwitchEngine,
     AutoSwitchEvent,
@@ -79,6 +79,8 @@ class AutoScreen(Screen):
         super().__init__()
         self._engine: AutoSwitchEngine | None = None
         self._settings = None
+        # Background daemon state: True/False, or None when none is registered.
+        self._daemon: bool | None = None
         # Session-only threshold adjustment (t, then arrows). Never written
         # to settings.json — same memory-only precedent as the dry-run
         # toggle. ``_configured_threshold`` is the mount-time file value the
@@ -115,6 +117,7 @@ class AutoScreen(Screen):
         self._update_summary()
         self.watch(self.app, "snapshot", self._on_snapshot)
         self.watch(self.app, "theme", self._on_theme_change)
+        self._daemon = daemon.running()
         self._start_engine(dry_run=True)
 
     def on_unmount(self) -> None:
@@ -233,6 +236,8 @@ class AutoScreen(Screen):
         self._update_badge()
         log = self.query_one("#event-log", RichLog)
         mode = "Manual mode (auto-switch off)" if dry_run else "Auto-switch on"
+        if self._daemon:
+            mode = "Auto-switch on (background daemon switches, this log only shows decisions)"
         log.write(
             Text(
                 f"— engine started: {mode} —",
@@ -259,6 +264,9 @@ class AutoScreen(Screen):
     def action_toggle_live(self) -> None:
         if self._engine is None:
             return
+        if self._daemon is not None:
+            self._toggle_daemon()
+            return
         if self._engine.dry_run:
             self.app.push_screen(
                 ConfirmModal(
@@ -273,6 +281,17 @@ class AutoScreen(Screen):
         else:
             self._restart_engine(dry_run=True)
 
+    def _toggle_daemon(self) -> None:
+        """With a daemon registered, `l` controls it. A second in-view engine
+        would race the daemon, so the view stays an observer."""
+        turn_on = not self._daemon
+        if daemon.set_running(turn_on):
+            self._daemon = turn_on
+            self.notify("Auto-switch on" if turn_on else "Manual mode", timeout=2)
+        else:
+            self.notify("Could not change the background daemon", severity="error")
+        self._update_badge()
+
     def _on_live_confirm(self, confirmed: bool | None) -> None:
         if confirmed:
             self._restart_engine(dry_run=False)
@@ -284,7 +303,12 @@ class AutoScreen(Screen):
 
     def _update_badge(self) -> None:
         badge = self.query_one("#mode-badge", Static)
-        if self._engine is not None and not self._engine.dry_run:
+        live = (
+            self._daemon
+            if self._daemon is not None
+            else (self._engine is not None and not self._engine.dry_run)
+        )
+        if live:
             badge.update(" Auto-switch on ")
             badge.set_classes("live")
         else:
